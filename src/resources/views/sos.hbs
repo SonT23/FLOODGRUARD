@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FloodGruard - Quản lý SOS (Mesh)</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f6f9; height: 100vh; overflow: hidden; }
+        .sidebar { background-color: #1a202c; color: white; height: 100vh; width: 250px; position: fixed; }
+        .sidebar .nav-link { color: #a0aec0; padding: 15px 20px; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background-color: #2d3748; color: #fff; border-left: 4px solid #3182ce; }
+        .main-content { margin-left: 250px; padding: 0; height: 100vh; display: flex; }
+        
+        .sos-list { width: 350px; background: white; border-right: 1px solid #e2e8f0; overflow-y: auto; }
+        .sos-detail { flex: 1; display: flex; flex-direction: column; background: #edf2f7; }
+        .sos-item { padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .sos-item.active { background: #ebf8ff; border-left: 4px solid #3182ce; }
+        
+        /* Chat Mesh Style */
+        .chat-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .msg { max-width: 75%; padding: 12px; border-radius: 12px; font-size: 0.95rem; position: relative; }
+        .msg-in { background: white; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .msg-out { background: #3182ce; color: white; align-self: flex-end; }
+        
+        .mesh-info { font-size: 0.75rem; color: #718096; margin-top: 5px; display: block; font-style: italic; }
+        .badge-mesh { font-size: 0.7rem; background: #ed8936; color: white; padding: 2px 6px; border-radius: 4px; margin-right: 5px; }
+    </style>
+</head>
+<body>
+    <div class="sidebar d-flex flex-column pt-3">
+        <h4 class="text-center text-primary mb-4 fw-bold"><i class="fas fa-shield-alt"></i> FloodGruard</h4>
+        <nav class="nav flex-column">
+            <a class="nav-link" href="index"><i class="fas fa-map-marked-alt me-2"></i> Bản đồ AI & Tác chiến</a>
+            <a class="nav-link" href="sensor"><i class="fas fa-broadcast-tower me-2"></i> Cảm biến & IoT</a>
+            <a class="nav-link active" href="sos"><i class="fas fa-users me-2"></i> Quản lý SOS (Mesh) <span class="badge bg-danger ms-1">5</span></a>
+            <a class="nav-link" href="grab"><i class="fas fa-box-open me-2"></i> Nguồn lực</a>
+            <a class="nav-link" href="report"><i class="fas fa-chart-pie me-2"></i> Báo cáo Hiệu quả</a>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="sos-list">
+            <div class="p-3 bg-light border-bottom fw-bold text-danger">
+                <i class="fas fa-exclamation-circle"></i> Đang chờ xử lý: 05
+            </div>
+            
+            <div class="sos-item active">
+                <div class="d-flex justify-content-between">
+                    <strong>Chú Ba (Xóm 4)</strong>
+                    <span class="badge bg-danger">Nguy cấp</span>
+                </div>
+                <div class="text-muted small mt-1">"Nhà ngập 1.5m, có người già..."</div>
+                <div class="mt-1"><span class="badge-mesh">Mesh Hop: 3</span> <small class="text-muted">qua máy Anh Tùng</small></div>
+            </div>
+
+            <div class="sos-item">
+                <div class="d-flex justify-content-between">
+                    <strong>Cô Lan (Cạnh suối)</strong>
+                    <span class="badge bg-warning text-dark">Cao</span>
+                </div>
+                <div class="text-muted small mt-1">"Cần hỗ trợ di dời tài sản..."</div>
+                <div class="mt-1"><span class="badge-mesh">Mesh Hop: 1</span> <small class="text-muted">Trực tiếp</small></div>
+            </div>
+        </div>
+
+        <div class="sos-detail">
+            <div class="p-3 bg-white border-bottom shadow-sm d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="m-0 fw-bold">Hội thoại: Chú Ba (Ngắt kết nối Internet)</h5>
+                    <small class="text-success"><i class="fas fa-link"></i> Đang kết nối qua Mạng lưới Mesh nội bộ</small>
+                </div>
+                <div>
+                    <button class="btn btn-outline-success btn-sm"><i class="fas fa-map-marked-alt"></i> Gửi Bản đồ Sơ tán</button>
+                    <button class="btn btn-primary btn-sm ms-2">Điều Đội Cứu Hộ</button>
+                </div>
+            </div>
+
+            <div class="chat-area">
+                <div class="msg msg-in">
+                    SOS! Nước lên nhanh quá, mẹ tôi khó thở. Mất điện rồi, không gọi được cho ai cả!
+                    <span class="mesh-info">
+                        <i class="fas fa-project-diagram"></i> Nhận lúc 02:15 AM qua <strong>3 thiết bị trung gian</strong>
+                    </span>
+                </div>
+
+                <div class="msg msg-out">
+                    Chào chú Ba, Ban chỉ huy đã nhận được tọa độ. Chú bình tĩnh.
+                    <span class="mesh-info text-white-50">Gửi lúc 02:16 AM</span>
+                </div>
+
+                <div class="msg msg-out bg-success border-success">
+                    <i class="fas fa-map"></i> Hệ thống đã gửi "Lộ trình sơ tán an toàn" về máy chú. Vui lòng mở App xem đường màu xanh.
+                    <span class="mesh-info text-white-50">Tự động gửi</span>
+                </div>
+            </div>
+
+            <div class="p-3 bg-white border-top">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Nhập tin nhắn qua giao thức LoRa/Mesh...">
+                    <button class="btn btn-primary"><i class="fas fa-paper-plane"></i> Gửi tin</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "watch": "sass --watch src/resources/scss/:src/public/css/"
+  },
+  "dependencies": {
+    "express": "^5.2.1",
+    "express-handlebars": "^8.0.3",
+    "nodemon": "^3.1.11"
+  },
+  "devDependencies": {
+    "morgan": "^1.10.1",
+    "sass": "^1.97.2"
+  },
+  "name": "teach-seed",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/server.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
