@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  floodguard-app:
+    container_name: floodguard_container
+    build: .
+    ports:
+      - "80:3000"  # Chuyển port 80 (Web mặc định) của VPS vào port 3000 của App
+    restart: always
+    environment:
+      - NODE_ENV=production
