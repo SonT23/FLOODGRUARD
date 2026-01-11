@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FloodGruard - Dashboard Tác chiến AI</title>
+    <title>FloodGuard - Dashboard Tác chiến AI</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #f4f6f9; height: 100vh; overflow: hidden; }
@@ -25,26 +26,39 @@
         }
 
         /* Custom Popup Style */
-        .custom-popup .leaflet-popup-content-wrapper {
-            border-radius: 8px;
-            padding: 0;
-            overflow: hidden;
+        .custom-popup .leaflet-popup-content-wrapper { border-radius: 8px; padding: 0; overflow: hidden; }
+        .custom-popup .leaflet-popup-content { margin: 10px; font-size: 13px; }
+
+        /* Animation cho SOS Marker */
+        @keyframes blink { 
+            0% { opacity: 1; transform: scale(1); } 
+            50% { opacity: 0.5; transform: scale(1.5); } 
+            100% { opacity: 1; transform: scale(1); } 
         }
-        .custom-popup .leaflet-popup-content {
-            margin: 10px;
-            font-size: 13px;
+        .sos-blink {
+            background-color: rgba(220, 53, 69, 0.8);
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 100%;
+            height: 100%;
+            box-shadow: 0 0 15px rgba(220, 53, 69, 1);
+            animation: blink 1.5s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
         }
     </style>
 </head>
 <body>
     <div class="sidebar d-flex flex-column pt-3">
-        <h4 class="text-center text-primary mb-4 fw-bold"><i class="fas fa-shield-alt"></i> FloodGruard</h4>
+        <h4 class="text-center text-primary mb-4 fw-bold"><i class="fas fa-shield-alt"></i> FloodGuard</h4>
         <nav class="nav flex-column">
-            <a class="nav-link active" href="index"><i class="fas fa-map-marked-alt me-2"></i> Bản đồ AI & Tác chiến</a>
-            <a class="nav-link" href="sensor"><i class="fas fa-broadcast-tower me-2"></i> Cảm biến & IoT</a>
-            <a class="nav-link" href="sos"><i class="fas fa-users me-2"></i> Quản lý SOS (Mesh) <span class="badge bg-danger ms-1">5</span></a>
-            <a class="nav-link" href="grab"><i class="fas fa-box-open me-2"></i> Nguồn lực</a>
-            <a class="nav-link" href="report"><i class="fas fa-chart-pie me-2"></i> Báo cáo Hiệu quả</a>
+            <a class="nav-link active" href="/index"><i class="fas fa-map-marked-alt me-2"></i> Bản đồ AI & Tác chiến</a>
+            <a class="nav-link" href="/sensor"><i class="fas fa-broadcast-tower me-2"></i> Cảm biến & IoT</a>
+            <a class="nav-link" href="/sos"><i class="fas fa-users me-2"></i> Quản lý SOS (Mesh) <span class="badge bg-danger ms-1">5</span></a>
+            <a class="nav-link" href="/grab"><i class="fas fa-box-open me-2"></i> Nguồn lực</a>
+            <a class="nav-link" href="/report"><i class="fas fa-chart-pie me-2"></i> Báo cáo Hiệu quả</a>
         </nav>
     </div>
 
@@ -71,7 +85,7 @@
                             <h5 class="mb-1"><i class="fas fa-robot"></i> AI Prediction Warning</h5>
                             <small>Hệ thống dự báo nước sẽ tràn vào Xóm 4 trong <strong>18 phút</strong> nữa.</small>
                         </div>
-                        <button class="btn btn-light text-primary fw-bold" onclick="toggleAIZone()">Kích hoạt Loa Phường</button>
+                        <button class="btn btn-light text-primary fw-bold" onclick="alert('Đã phát loa cảnh báo!')">Kích hoạt Loa Phường</button>
                     </div>
                 </div>
             </div>
@@ -109,11 +123,10 @@
                             <i class="fas fa-map-signs me-2"></i> Cập nhật lộ trình sơ tán
                         </button>
                         <hr>
-                        <small class="text-muted fw-bold">Dữ liệu từ:</small>
+                        <small class="text-muted fw-bold">Trạng thái Realtime:</small>
                         <ul class="list-unstyled small text-muted">
-                            <li><i class="fas fa-check text-success"></i> 24 Cảm biến IoT</li>
-                            <li><i class="fas fa-check text-success"></i> 150 User Cộng đồng</li>
-                            <li><i class="fas fa-check text-success"></i> AI Model v2.1</li>
+                            <li><i class="fas fa-satellite-dish text-success"></i> Socket.io: <span id="socket-status" class="fw-bold text-danger">Đang kết nối...</span></li>
+                            <li><i class="fas fa-users text-primary"></i> Mesh Nodes: 15 Active</li>
                         </ul>
                     </div>
                 </div>
@@ -124,81 +137,100 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
     <script>
-        // 1. Khởi tạo bản đồ tại Hương Khê, Hà Tĩnh
-        var map = L.map('map').setView([18.188, 105.715], 14); // Tọa độ giả lập khu vực Hương Khê
+        // --- 1. KHỞI TẠO BẢN ĐỒ ---
+        // Tọa độ giả lập khu vực Hương Khê, Hà Tĩnh
+        var map = L.map('map').setView([18.188, 105.715], 14); 
 
-        // 2. Thêm lớp nền bản đồ (OpenStreetMap)
+        // Thêm lớp nền OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap'
         }).addTo(map);
 
-        // --- DATA LAYERS ---
+        // --- 2. CÁC LỚP DỮ LIỆU TĨNH (AI & Route) ---
 
-        // A. Vùng Nguy hiểm (AI Prediction Zone) - Hình tròn đỏ
+        // A. Vùng Nguy hiểm (AI Prediction Zone)
         var dangerZone = L.circle([18.188, 105.715], {
             color: 'red',
             fillColor: '#f03',
             fillOpacity: 0.3,
-            radius: 800, // Bán kính 800m
-            dashArray: '10, 10' // Nét đứt thể hiện vùng dự báo
+            radius: 800,
+            dashArray: '10, 10'
         }).addTo(map).bindPopup("<b>Dự báo AI:</b><br>Nước dâng >1.5m trong 1h tới.");
 
-        // B. Lộ trình sơ tán (Safe Route) - Đường màu xanh
+        // B. Lộ trình sơ tán (Safe Route)
         var safeRouteLatLongs = [
-            [18.188, 105.715], // Điểm xuất phát (Vùng nguy hiểm)
-            [18.192, 105.718],
-            [18.195, 105.722],
-            [18.200, 105.730]  // Điểm tập kết (Trường học/UBND)
+            [18.188, 105.715], [18.192, 105.718], [18.195, 105.722], [18.200, 105.730]
         ];
         var safeRoute = L.polyline(safeRouteLatLongs, {
-            color: '#48bb78', 
-            weight: 5,
-            opacity: 0.8,
-            dashArray: '5, 10',
-            className: 'animated-route' // Có thể thêm CSS animation nếu muốn
+            color: '#48bb78', weight: 5, opacity: 0.8, dashArray: '5, 10', className: 'animated-route'
         }).addTo(map).bindPopup("Lộ trình sơ tán an toàn");
 
         // Điểm tập kết
-        L.marker([18.200, 105.730]).addTo(map)
-            .bindPopup("<b>Điểm tập kết an toàn</b><br>Trường THPT Hương Khê");
+        L.marker([18.200, 105.730]).addTo(map).bindPopup("<b>Điểm tập kết an toàn</b><br>Trường THPT Hương Khê");
 
-        // C. Marker SOS (Chú Ba)
-        // Tạo icon SOS tuỳ chỉnh
-        var sosIcon = L.divIcon({
+        // C. Marker SOS Mẫu (Chú Ba - Tĩnh)
+        var staticSosIcon = L.divIcon({
             className: 'custom-div-icon',
-            html: "<div style='background-color:white; border:2px solid red; border-radius:50%; width:30px; height:30px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 10px red;'><i class='fas fa-exclamation text-danger'></i></div>",
-            iconSize: [30, 30],
-            iconAnchor: [15, 15]
+            html: "<div class='sos-blink'><i class='fas fa-exclamation'></i></div>",
+            iconSize: [30, 30]
+        });
+        var sosMarker = L.marker([18.188, 105.715], {icon: staticSosIcon}).addTo(map)
+            .bindPopup("<b class='text-danger'>SOS: Chú Ba</b><br>Nước 1.5m, có người già.<br><i>Mesh Hops: 3</i>");
+
+        // --- 3. KẾT NỐI SOCKET.IO REALTIME (Phần mới thêm) ---
+        const socket = io();
+
+        socket.on('connect', () => {
+            console.log("Đã kết nối Socket ID:", socket.id);
+            document.getElementById('socket-status').innerText = "Online";
+            document.getElementById('socket-status').className = "fw-bold text-success";
         });
 
-        var sosMarker = L.marker([18.188, 105.715], {icon: sosIcon}).addTo(map)
-            .bindPopup("<b class='text-danger'>SOS: Chú Ba</b><br>Nước 1.5m, có người già.<br><i>Mesh Hops: 3</i>").openPopup();
+        // Lắng nghe sự kiện SOS từ Server
+        socket.on('sos_alert', (data) => {
+            console.log("Nhận cảnh báo SOS:", data);
 
-        // D. Ảnh cộng đồng (Community Photos) - Ví dụ
+            // Tạo Icon nhấp nháy cho SOS mới
+            var newSosIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: "<div class='sos-blink'><i class='fas fa-exclamation'></i></div>",
+                iconSize: [30, 30]
+            });
+
+            // Thêm Marker mới vào bản đồ
+            L.marker([data.lat, data.lng], {icon: newSosIcon}).addTo(map)
+                .bindPopup(`<b class="text-danger">SOS MỚI!</b><br>${data.message}<br><small>Lúc: ${new Date().toLocaleTimeString()}</small>`)
+                .openPopup();
+
+            // Hiệu ứng bay tới vị trí SOS (FlyTo)
+            map.flyTo([data.lat, data.lng], 16, {
+                animate: true,
+                duration: 1.5
+            });
+
+            // Phát âm thanh cảnh báo (Optional)
+            // var audio = new Audio('alert_sound.mp3'); audio.play();
+        });
+
+        // --- 4. HÀM TƯƠNG TÁC BUTTON ---
         var photoIcon = L.divIcon({
             className: 'custom-div-icon',
             html: "<div style='color: #4a5568;'><i class='fas fa-camera fa-lg'></i></div>",
             iconSize: [20, 20]
         });
-        
-        var photoMarker = L.marker([18.185, 105.712], {icon: photoIcon}); // Chưa add vào map ngay, chờ toggle
+        var photoMarker = L.marker([18.185, 105.712], {icon: photoIcon});
 
-        // --- INTERACTION FUNCTIONS ---
         function toggleLayer(type) {
             if (type === 'danger') {
-                if(map.hasLayer(dangerZone)) map.removeLayer(dangerZone);
-                else map.addLayer(dangerZone);
+                if(map.hasLayer(dangerZone)) map.removeLayer(dangerZone); else map.addLayer(dangerZone);
             }
             if (type === 'route') {
-                if(map.hasLayer(safeRoute)) map.removeLayer(safeRoute);
-                else map.addLayer(safeRoute);
+                if(map.hasLayer(safeRoute)) map.removeLayer(safeRoute); else map.addLayer(safeRoute);
             }
             if (type === 'community') {
-                if(map.hasLayer(photoMarker)) map.removeLayer(photoMarker);
-                else {
-                    photoMarker.addTo(map).bindPopup("Ảnh báo ngập tại ngõ 2");
-                }
+                if(map.hasLayer(photoMarker)) map.removeLayer(photoMarker); 
+                else photoMarker.addTo(map).bindPopup("Ảnh báo ngập tại ngõ 2");
             }
         }
     </script>
